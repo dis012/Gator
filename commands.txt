@@ -1,0 +1,6 @@
+- Goose used for migrations:
+goose postgres postgres://username:password@localhost:5432/dbName up
+goose postgres postgres://username:password@localhost:5432/dbName down
+
+- SQLC for generating go code from sql queries 
+sqlc generate

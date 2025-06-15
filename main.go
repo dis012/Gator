@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/dis012/agreGator/internal/config"
 	"github.com/dis012/agreGator/internal/database"
@@ -42,6 +45,12 @@ func main() {
 	cmds.register("register", handleRegister)
 	cmds.register("reset", handleReset)
 	cmds.register("users", handleUsers)
+	cmds.register("agg", middlewareFetcs(handleAggregate))
+	cmds.register("addfeed", middlewareLoggedIn(handleAddFeed))
+	cmds.register("feeds", handleFeeds)
+	cmds.register("follow", middlewareLoggedIn(handleFollow))
+	cmds.register("following", middlewareLoggedIn(handleFollowing))
+	cmds.register("unfollow", middlewareLoggedIn(handleUnfollow))
 
 	args := os.Args
 
@@ -57,5 +66,23 @@ func main() {
 	err = cmds.run(program_state, cmd)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func middlewareLoggedIn(handler func(*state, command, database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		user, err := s.db.GetUser(context.Background(), s.cfg.Current_user_name)
+		if err != nil {
+			return fmt.Errorf("error getting user from database: %v", err)
+		}
+
+		return handler(s, cmd, user)
+	}
+}
+
+func middlewareFetcs(handler func(*state, command, time.Duration) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		time, _ := time.ParseDuration("2s")
+		return handler(s, cmd, time)
 	}
 }
